@@ -1,18 +1,3 @@
-<style>
-body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1f2733;line-height:1.5}
-h1{color:#1a3d8f;border-bottom:3px solid #326ce5;padding-bottom:8px}
-h2{color:#326ce5;margin-top:24px;border-bottom:1px solid #cdd9f0;padding-bottom:4px}
-h3{color:#1a3d8f;margin-top:14px}
-table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0}
-th{background:#326ce5;color:#fff;text-align:left;padding:6px 9px}
-td{border:1px solid #d6deec;padding:6px 9px;vertical-align:top}
-tr:nth-child(even) td{background:#f4f7fc}
-pre{background:#1e2430;color:#e6edf3;border-radius:8px;padding:12px 16px;font-size:12.5px;overflow:auto}
-code{background:#eef2f9;color:#c0341d;padding:1px 5px;border-radius:4px}
-blockquote{border-left:5px solid #326ce5;background:#eef4ff;padding:8px 16px;color:#333}
-.t{display:inline-block;background:#326ce5;color:#fff;border-radius:5px;padding:2px 9px;font-weight:600;font-size:12px}
-</style>
-
 # Kubernetes Production (CKA + Kubespray) — Lab Workbook (Student Questions)
 
 These labs all run against **one shared, multi-node Kubernetes cluster deployed on OpenStack via Kubespray** — you build it yourself in **Lab 0** (see `setup.md`), and every later lab assumes it is up and `Ready`. Some labs are *infra* labs marked 🖥️: they are driven from the **Ansible control node** against `inventory/lab/` (inventory and `group_vars` edits, `cluster.yml`, `scale.yml`, `remove-node.yml`, `upgrade-cluster.yml`, `recover-control-plane.yml`, …). The rest are *usage* labs run with `kubectl` against the cluster's `admin.conf` — identical to any cluster, but here the OpenStack **Octavia** load balancer and **Cinder CSI** back the Access and Storage labs. Throughout, **substitute the real node names from `kubectl get nodes`** wherever you see `cka-lab-*`, `node1`–`node6`, or similar placeholders. The énoncé tells you *what* to accomplish; figuring out the *how* is the point. Verify your own work with `kubectl get`/`describe` (or the `> Verify:` line) before moving on, and clean up your namespaces when you finish.
@@ -51,7 +36,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 0 — Deploy the cluster on OpenStack via Kubespray
 
-<span class="t">⏱ 90 min</span> &nbsp; 🖥️ *(infra · foundation — run from the Ansible control node)*
+**⏱ 90 min**   🖥️ *(infra · foundation — run from the Ansible control node)*
 
 **Objective:** Stand up the **shared lab cluster** that every other lab in this workbook uses: a multi-node Kubernetes cluster on OpenStack VMs, provisioned by Kubespray, with the OpenStack integration (external cloud provider + **Octavia** LBaaS + **Cinder CSI**) wired in so `LoadBalancer` Services and dynamic PVCs work. Full details and reference commands live in `setup.md`.
 
@@ -71,7 +56,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 1 — Kubernetes Architecture
 
-<span class="t">⏱ 10 min</span>
+**⏱ 10 min**
 
 **Objective:** Map the running cluster against the control-plane / worker architecture in your head.
 
@@ -89,7 +74,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 2 — Requirements & Environment
 
-<span class="t">⏱ 20 min</span>
+**⏱ 20 min**
 
 **Objective:** Bring up the **Ansible control node** the way Kubespray pins it (Python venv + `pip install -r requirements.txt`), then use Ansible **ad-hoc** commands to verify the **target-node prerequisites** across the whole fleet at once — supported OS, swap off, IPv4 forwarding + `br_netfilter`, and the required ports. This is the preflight you run *before* Lab 6's `cluster.yml`.
 
@@ -110,7 +95,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 3 — Installation & Inventory
 
-<span class="t">⏱ 25 min</span>
+**⏱ 25 min**
 
 **Objective:** Stand up the Kubespray control node and produce a parseable inventory: clone Kubespray into a venv, install its Ansible deps, copy `inventory/sample` → `inventory/mycluster`, edit `inventory.ini` to place nodes in the right groups, then prove the inventory parses (and — when a fleet exists — that Ansible can reach every node).
 
@@ -131,7 +116,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 4 — Cluster Configuration (group_vars)
 
-<span class="t">⏱ 30 min</span>
+**⏱ 30 min**
 
 **Objective:** Turn a generic copied inventory into *your* cluster by editing the handful of `group_vars` that shape every Kubespray cluster — `k8s-cluster.yml` (version/CNI/runtime/subnets), `addons.yml` (metrics-server/helm), `all.yml` (NTP/proxy/loadbalancer) — then prove the edits are valid YAML and the inventory still parses.
 
@@ -150,7 +135,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 5 — Container Runtimes & CNI
 
-<span class="t">⏱ 25 min</span>
+**⏱ 25 min**
 
 **Objective:** Two configuration exercises driven entirely from `group_vars`: **(A)** pick and configure the **container runtime** the kubelet talks to (CRI), and **(B)** pick and tune the cluster **CNI**. Validate the YAML on the control node; the deploy/verify steps are 🖥️ and assume the cluster from Lab 6.
 
@@ -180,7 +165,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 6 — Deploying the Cluster (`cluster.yml`)
 
-<span class="t">⏱ 45 min</span> &nbsp; 🖥️ *(long run)*
+**⏱ 45 min**   🖥️ *(long run)*
 
 **Objective:** Take a prepared inventory, validate it, run `cluster.yml` to deploy a cluster, retrieve the kubeconfig, and verify the cluster — the full Day-1 flow.
 
@@ -198,7 +183,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 7 — High Availability (failover)
 
-<span class="t">⏱ 30 min</span> &nbsp; 🖥️
+**⏱ 30 min**   🖥️
 
 **Objective:** Build an HA control plane — put 3 nodes in `kube_control_plane` **and** `etcd`, choose how the kube-apiserver is load-balanced, choose the `etcd_deployment_type`, deploy, then prove HA by stopping one control-plane node and watching the API stay up.
 
@@ -217,7 +202,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 8 — Deploying Applications & Autoscaling
 
-<span class="t">⏱ 25 min</span>
+**⏱ 25 min**
 
 **Objective:** Two exercises: **(A)** ship a small web app with a controlled rollout, a DaemonSet and a StatefulSet in one namespace; **(B)** autoscale a Deployment on CPU and observe a real scale-out under load (requires `metrics-server`).
 
@@ -247,7 +232,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 9 — Managing Storage (Cinder)
 
-<span class="t">⏱ 15 min</span>
+**⏱ 15 min**
 
 **Objective:** Use both dynamic (Cinder CSI) and static provisioning, observe binding, and prove data survives a Pod restart.
 
@@ -265,7 +250,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 10 — Application Access (Octavia/Ingress/Gateway)
 
-<span class="t">⏱ 25 min</span>
+**⏱ 25 min**
 
 **Objective:** Two exercises: **(A)** expose a single Deployment several ways (ClusterIP, NodePort, Ingress) and observe each; **(B)** install the Gateway API CRDs and model HTTP routing with a `GatewayClass` / `Gateway` / `HTTPRoute`.
 
@@ -294,7 +279,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 11 — Configuration & Quotas
 
-<span class="t">⏱ 15 min</span>
+**⏱ 15 min**
 
 **Objective:** Deliver a multi-tenant namespace `dev` with a hard Pod cap, resource quota, sensible per-Container defaults, plus a Pod wired to a ConfigMap and a Secret.
 
@@ -316,7 +301,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 12 — Scheduling
 
-<span class="t">⏱ 20 min</span>
+**⏱ 20 min**
 
 **Objective:** Pin `batch` work to a dedicated worker, spread stateless `web` replicas across workers, and prove a Pod with no toleration cannot reach the dedicated worker.
 
@@ -336,7 +321,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 13 — Networking & NetworkPolicy
 
-<span class="t">⏱ 20 min</span>
+**⏱ 20 min**
 
 **Objective:** Lock down a 3-tier mini-app so only `web` can reach `api`, only `api` can reach `db`, and everything else is denied.
 
@@ -356,7 +341,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 14 — Security (RBAC)
 
-<span class="t">⏱ 20 min</span>
+**⏱ 20 min**
 
 **Objective:** Build a `read-only-operator` ServiceAccount that can read every resource kind in namespace `team-a` plus list nodes cluster-wide — and nothing else. Run a Pod under that identity and prove the limits.
 
@@ -375,7 +360,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 15 — CRDs & Operators
 
-<span class="t">⏱ 15 min</span>
+**⏱ 15 min**
 
 **Objective:** Extend the Kubernetes API with a CustomResourceDefinition, create and inspect a custom resource, and articulate what turns a CRD into an operator.
 
@@ -392,7 +377,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 16 — Node Maintenance & Scaling
 
-<span class="t">⏱ 35 min</span> &nbsp; 🖥️
+**⏱ 35 min**   🖥️
 
 **Objective:** Operate a running Kubespray cluster on Day-2 without disrupting its workloads: add a worker node (append to the inventory under `kube_node`, then `scale.yml --limit=<newnode>`), then remove a node (`remove-node.yml -e node=<node>` — which cordons, drains and resets it — then delete it from the inventory). Note the special procedures for control-plane / etcd nodes and the never-below-3 rule.
 
@@ -424,7 +409,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 17 — Upgrades (`upgrade-cluster.yml`)
 
-<span class="t">⏱ 40 min</span> &nbsp; 🖥️ *(long run)*
+**⏱ 40 min**   🖥️ *(long run)*
 
 **Objective:** Perform a graceful, rolling upgrade of a Kubespray-managed cluster the safe way: snapshot etcd first, check out the matching Kubespray release tag, bump `kube_version`, then run `upgrade-cluster.yml` so nodes are cordoned/drained/uncordoned one at a time — moving Kubernetes one minor at a time (`1.30 → 1.31 → 1.32`, never skip).
 
@@ -445,7 +430,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 18 — Backup, Recovery & Reset
 
-<span class="t">⏱ 35 min</span> &nbsp; 🖥️
+**⏱ 35 min**   🖥️
 
 **Objective:** Practice the Day-2 "protect and repair" flow: take a verified etcd snapshot with `etcdctl`, recover a broken control plane from that snapshot with `recover-control-plane.yml`, and tear the cluster down cleanly with `reset.yml`. Finish by knowing the toggle for Secret encryption at rest.
 
@@ -466,7 +451,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 19 — Add-ons & Packaging
 
-<span class="t">⏱ 25 min</span>
+**⏱ 25 min**
 
 **Objective:** Two exercises: **(A)** turn on a set of Kubespray add-ons declaratively in one inventory file (`metrics_server`, `helm`, `cert_manager`, `metallb`, `local_volume_provisioner`, `registry`), re-run the playbook, and verify each; **(B)** install the same app two ways — once with **Helm** (override a value, roll back), once with **Kustomize** (a prod overlay over a base).
 
@@ -492,7 +477,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 20 — Troubleshooting
 
-<span class="t">⏱ 20 min</span>
+**⏱ 20 min**
 
 **Objective:** Triage a small "outage" — a namespace ships three broken Deployments. Find each root cause from `kubectl` output alone, then fix each with the smallest possible change.
 
@@ -548,7 +533,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 21 — Hardening & Offline
 
-<span class="t">⏱ 20 min</span>
+**⏱ 20 min**
 
 **Objective:** Turn a plain Kubespray config into a hardened, kube-bench-aligned one by applying the upstream CI hardening scenario `tests/files/ubuntu24-calico-all-in-one-hardening.yml` as your `group_vars` base (admission plugins + Pod Security Admission, audit logging, encryption at rest, anonymous access off, kubelet lock-down). Validate and `--syntax-check` it, deploy it (🖥️), and prove the hardening took effect. The lab also covers large-deployment tuning and the offline/air-gapped vars.
 
@@ -568,7 +553,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 22 — Cloud & OpenStack
 
-<span class="t">⏱ 25 min</span> &nbsp; 🖥️
+**⏱ 25 min**   🖥️
 
 **Objective:** Take a working Kubespray inventory and wire the cluster into an OpenStack tenant the modern, supported way: the external cloud-controller-manager (`cloud_provider: external` + `external_cloud_provider: openstack`), Keystone application credentials, Octavia for `LoadBalancer` Services, and the Cinder CSI driver for dynamic block storage. Then re-run `cluster.yml` and verify the integration.
 
@@ -591,7 +576,7 @@ These labs all run against **one shared, multi-node Kubernetes cluster deployed 
 
 ## Lab 23 — Practice Exam
 
-<span class="t">⏱ 60 min</span>
+**⏱ 60 min**
 
 **Objective:** Two independent, exam-style sequences covering the full set of domains end-to-end. Start each task by switching context with `kubectl config set-context --current --namespace=<task-ns>`.
 

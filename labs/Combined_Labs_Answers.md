@@ -1,18 +1,3 @@
-<style>
-body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1f2733;line-height:1.5}
-h1{color:#1a3d8f;border-bottom:3px solid #326ce5;padding-bottom:8px}
-h2{color:#326ce5;margin-top:24px;border-bottom:1px solid #cdd9f0;padding-bottom:4px}
-h3{color:#1a3d8f;margin-top:14px}
-table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0}
-th{background:#326ce5;color:#fff;text-align:left;padding:6px 9px}
-td{border:1px solid #d6deec;padding:6px 9px;vertical-align:top}
-tr:nth-child(even) td{background:#f4f7fc}
-pre{background:#1e2430;color:#e6edf3;border-radius:8px;padding:12px 16px;font-size:12.5px;overflow:auto}
-code{background:#eef2f9;color:#c0341d;padding:1px 5px;border-radius:4px}
-blockquote{border-left:5px solid #326ce5;background:#eef4ff;padding:8px 16px;color:#333}
-.t{display:inline-block;background:#326ce5;color:#fff;border-radius:5px;padding:2px 9px;font-weight:600;font-size:12px}
-</style>
-
 # Kubernetes Production — CKA + Kubespray — Lab Answer Key (Instructor)
 
 Reference solutions, expected verification output, and teaching notes for the 24 labs (Lab 0 setup + Labs 1–23) of the combined **Kubernetes Production — CKA + Kubespray** formation.
@@ -58,7 +43,7 @@ Validation note: the **Kubespray/OpenStack steps are doc-validated** (cluster bu
 
 ## Lab 0 — Deploy the cluster on OpenStack via Kubespray
 
-<span class="t">⏱ 90 min</span> &nbsp; 🔴 &nbsp; 🖥️ *(Ansible control node)*
+**⏱ 90 min**   🔴   🖥️ *(Ansible control node)*
 
 ### Solution
 
@@ -115,7 +100,7 @@ A smaller variant (1 control-plane + 2 workers) is fine for everything except th
 
 ## Lab 1 — Kubernetes Architecture
 
-<span class="t">⏱ 10 min</span> &nbsp; 🟢
+**⏱ 10 min**   🟢
 
 ### Solution
 
@@ -149,7 +134,7 @@ Step 2 returns exactly four Pod names (`etcd-…`, `kube-apiserver-…`, `kube-c
 
 ## Lab 2 — Requirements & Environment
 
-<span class="t">⏱ 20 min</span> &nbsp; 🟢
+**⏱ 20 min**   🟢
 
 ### Solution
 
@@ -203,7 +188,7 @@ After `cluster.yml` the same `ss` command shows `kube-apiserver:6443`, `etcd:237
 
 ## Lab 3 — Installation & Inventory
 
-<span class="t">⏱ 25 min</span> &nbsp; 🟡
+**⏱ 25 min**   🟡
 
 ### Solution
 
@@ -281,7 +266,7 @@ ansible -i inventory/mycluster/inventory.ini all -m ping -b -u <ssh_user> --priv
 
 ## Lab 4 — Cluster Configuration (group_vars)
 
-<span class="t">⏱ 30 min</span> &nbsp; 🟡
+**⏱ 30 min**   🟡
 
 ### Solution
 
@@ -339,7 +324,7 @@ These `group_vars` only take effect when `cluster.yml` runs against the fleet (L
 
 ## Lab 5 — Container Runtimes & CNI
 
-<span class="t">⏱ 25 min</span> &nbsp; 🟡
+**⏱ 25 min**   🟡
 
 ### Solution
 
@@ -392,7 +377,7 @@ ansible-playbook -i inventory/mycluster/inventory.ini --syntax-check playbooks/c
 
 ## Lab 6 — Deploying the Cluster (`cluster.yml`)
 
-<span class="t">⏱ 45 min</span> &nbsp; 🔴 &nbsp; 🖥️ *(Ansible control node)*
+**⏱ 45 min**   🔴   🖥️ *(Ansible control node)*
 
 ### Solution
 
@@ -431,7 +416,7 @@ kubectl get pods -A
 
 ## Lab 7 — High Availability (failover)
 
-<span class="t">⏱ 30 min</span> &nbsp; 🔴 &nbsp; 🖥️ *(Ansible control node + fleet)*
+**⏱ 30 min**   🔴   🖥️ *(Ansible control node + fleet)*
 
 ### Solution
 
@@ -489,7 +474,7 @@ ssh ubuntu@node1 'sudo systemctl start etcd kubelet'   # recover → back to Rea
 
 ## Lab 8 — Deploying Applications & Autoscaling
 
-<span class="t">⏱ 25 min</span> &nbsp; 🟡
+**⏱ 25 min**   🟡
 
 ### Solution
 
@@ -597,7 +582,7 @@ The HPA scaled `1 → 4 → 7` as CPU spiked to 250%, then held at 7. With min=2
 
 ## Lab 9 — Managing Storage (Cinder)
 
-<span class="t">⏱ 15 min</span> &nbsp; 🟢
+**⏱ 15 min**   🟢
 
 ### Solution
 
@@ -681,7 +666,7 @@ kubectl -n l4-lab get pv,pvc
 
 ## Lab 10 — Application Access (Octavia/Ingress/Gateway)
 
-<span class="t">⏱ 25 min</span> &nbsp; 🟡
+**⏱ 25 min**   🟡
 
 ### Solution
 
@@ -780,7 +765,7 @@ kubectl -n gw-lab get gateway,httproute
 
 ## Lab 11 — Configuration & Quotas
 
-<span class="t">⏱ 15 min</span> &nbsp; 🟢
+**⏱ 15 min**   🟢
 
 ### Solution
 
@@ -867,7 +852,7 @@ Container resources are auto-injected by the LimitRange: requests `100m/128Mi`, 
 
 ## Lab 12 — Scheduling
 
-<span class="t">⏱ 20 min</span> &nbsp; 🟡
+**⏱ 20 min**   🟡
 
 ### Solution
 
@@ -967,7 +952,7 @@ kubectl -n l8-lab get pod -o wide
 
 ## Lab 13 — Networking & NetworkPolicy
 
-<span class="t">⏱ 20 min</span> &nbsp; 🟡
+**⏱ 20 min**   🟡
 
 ### Solution
 
@@ -1033,7 +1018,7 @@ kubectl -n l9-lab exec api-tester -- wget -qO- -T 5 http://db/    # "hello from 
 
 ## Lab 14 — Security (RBAC)
 
-<span class="t">⏱ 20 min</span> &nbsp; 🟡
+**⏱ 20 min**   🟡
 
 ### Solution
 
@@ -1090,7 +1075,7 @@ kubectl -n team-a exec kctl -- kubectl get nodes             # OK
 
 ## Lab 15 — CRDs & Operators
 
-<span class="t">⏱ 15 min</span> &nbsp; 🟢
+**⏱ 15 min**   🟢
 
 ### Solution
 
@@ -1147,7 +1132,7 @@ kubectl api-resources | grep demo.example.com
 
 ## Lab 16 — Node Maintenance & Scaling
 
-<span class="t">⏱ 35 min</span> &nbsp; 🔴 &nbsp; 🖥️ *(Ansible control node + fleet)*
+**⏱ 35 min**   🔴   🖥️ *(Ansible control node + fleet)*
 
 ### Solution
 
@@ -1205,7 +1190,7 @@ The control plane stays at **3** throughout — only worker capacity changed.
 
 ## Lab 17 — Upgrades (`upgrade-cluster.yml`)
 
-<span class="t">⏱ 40 min</span> &nbsp; 🔴 &nbsp; 🖥️ *(Ansible control node + fleet)*
+**⏱ 40 min**   🔴   🖥️ *(Ansible control node + fleet)*
 
 ### Solution
 
@@ -1267,7 +1252,7 @@ Confirm `get nodes` all-`Ready` and `get pods -A` healthy **between each minor**
 
 ## Lab 18 — Backup, Recovery & Reset
 
-<span class="t">⏱ 35 min</span> &nbsp; 🔴 &nbsp; 🖥️ *(Ansible control node + fleet)*
+**⏱ 35 min**   🔴   🖥️ *(Ansible control node + fleet)*
 
 ### Solution
 
@@ -1325,7 +1310,7 @@ Snapshot saved at /tmp/etcd_snapshot.db
 
 ## Lab 19 — Add-ons & Packaging
 
-<span class="t">⏱ 25 min</span> &nbsp; 🟡
+**⏱ 25 min**   🟡
 
 ### Solution
 
@@ -1418,7 +1403,7 @@ kubectl apply -k site-kz/overlays/staging
 
 ## Lab 20 — Troubleshooting
 
-<span class="t">⏱ 20 min</span> &nbsp; 🟡
+**⏱ 20 min**   🟡
 
 ### Solution
 
@@ -1460,7 +1445,7 @@ kubectl -n l11-lab get pod   # all 1/1 Running, stable restart count
 
 ## Lab 21 — Hardening & Offline
 
-<span class="t">⏱ 20 min</span> &nbsp; 🟢
+**⏱ 20 min**   🟢
 
 ### Solution
 
@@ -1524,7 +1509,7 @@ Optionally run **kube-bench** for the full CIS report.
 
 ## Lab 22 — Cloud & OpenStack
 
-<span class="t">⏱ 25 min</span> &nbsp; 🟡 &nbsp; 🖥️ *(Ansible control node + cloud)*
+**⏱ 25 min**   🟡   🖥️ *(Ansible control node + cloud)*
 
 ### Solution
 
@@ -1608,7 +1593,7 @@ Cross-check OpenStack-side: `openstack loadbalancer list` shows an amphora LB; `
 
 ## Lab 23 — Practice Exam
 
-<span class="t">⏱ 60 min</span> &nbsp; 🔴
+**⏱ 60 min**   🔴
 
 ### Solution — Practice Exam #1
 
