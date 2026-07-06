@@ -324,9 +324,145 @@ The hardening scenario is `mode: all-in-one`, so you don't need a fleet for the
 control logic — one Ubuntu 24.04 VM in all three groups (`kube_control_plane`,
 `etcd`, `kube_node`) runs the whole hardened deploy and every verification above.
 
+## Part B — Workload hardening with securityContext + PSA (✅ validated with `kubectl`)
+
+The hardening above secures the **control plane**. This part secures the
+**workloads**: harden a Pod with `securityContext`, prove it at runtime, then make
+the cluster **enforce** it with Pod Security Admission — the workload side of the
+`kube_pod_security_default_enforce: restricted` knob you set in Step 1. Runs on
+**any** cluster with `kubectl` (validated on `kind`).
+
+### B.1 — Deploy a hardened Pod
+
+```bash
+kubectl create namespace sec-lab
+
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata: { name: hardened, namespace: sec-lab }
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 2000
+    seccompProfile: { type: RuntimeDefault }
+  containers:
+  - name: app
+    image: busybox:1.37
+    command: ["sh","-c","sleep 3600"]
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: ["ALL"]
+    volumeMounts:
+    - { name: tmp, mountPath: /tmp }
+  volumes:
+  - name: tmp
+    emptyDir: {}          # explicit writable path (root FS is read-only)
+EOF
+kubectl wait --for=condition=Ready pod/hardened -n sec-lab --timeout=60s
+```
+
+✅ **Prove each control took effect:**
+
+```text
+# (a) runs as non-root UID 1000, with fsGroup 2000 as a supplementary group
+$ kubectl exec hardened -n sec-lab -- id
+uid=1000 gid=0(root) groups=0(root),2000
+
+# (b) the root filesystem is read-only
+$ kubectl exec hardened -n sec-lab -- touch /root-test
+touch: /root-test: Read-only file system      # (exit 1)
+
+# (c) but the mounted emptyDir IS writable
+$ kubectl exec hardened -n sec-lab -- sh -c 'touch /tmp/ok && echo OK'
+OK
+```
+
+### B.2 — See the difference: an un-hardened Pod runs as root
+
+```text
+$ kubectl run rooted -n sec-lab --image=busybox:1.37 --restart=Never -- sleep 3600
+$ kubectl exec rooted -n sec-lab -- id
+uid=0(root) gid=0(root) groups=0(root),10(wheel)     # ← root inside the container
+```
+
+### B.3 — The `runAsNonRoot` guard blocks a root image
+
+A Pod that asks for `runAsNonRoot: true` but whose image would start as root is
+**refused by the kubelet** — it never runs:
+
+```text
+$ kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: Pod
+metadata: { name: guard, namespace: sec-lab }
+spec:
+  securityContext: { runAsNonRoot: true }
+  containers:
+  - { name: c, image: busybox:1.37, command: ["sh","-c","sleep 3600"] }
+EOF
+$ kubectl get pod guard -n sec-lab \
+    -o jsonpath='{.status.containerStatuses[0].state.waiting.reason}: {.status.containerStatuses[0].state.waiting.message}'
+CreateContainerConfigError: container has runAsNonRoot and image will run as root
+```
+
+> The fix is either `runAsUser: <non-zero>` or an image with a non-root default user
+> (e.g. `nginxinc/nginx-unprivileged`).
+
+### B.4 — Enforce it cluster-side with Pod Security Admission
+
+Declaring `securityContext` is voluntary. **PSA** makes a namespace **reject** any
+Pod that isn't hardened — one label:
+
+```bash
+kubectl create namespace psa-restricted
+kubectl label ns psa-restricted pod-security.kubernetes.io/enforce=restricted
+```
+
+```text
+# A plain Pod is REJECTED, and the error lists exactly what to fix:
+$ kubectl run bad -n psa-restricted --image=nginx:1.27 --restart=Never
+Error from server (Forbidden): pods "bad" is forbidden: violates PodSecurity
+"restricted:latest": allowPrivilegeEscalation != false (container "bad" must set
+securityContext.allowPrivilegeEscalation=false), unrestricted capabilities
+(container "bad" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot
+!= true (pod or container "bad" must set securityContext.runAsNonRoot=true),
+seccompProfile (pod or container "bad" must set securityContext.seccompProfile.type
+to "RuntimeDefault" or "Localhost")
+
+# The SAME hardened Pod from B.1 IS admitted:
+$ sed 's/namespace: sec-lab/namespace: psa-restricted/' <hardened.yaml> | kubectl apply -f -
+pod/hardened created
+$ kubectl get pod hardened -n psa-restricted
+NAME       READY   STATUS    RESTARTS   AGE
+hardened   1/1     Running   0          2s
+```
+
+> 🔑 `securityContext` hardens the Pod; **PSA guarantees** no un-hardened Pod is
+> admitted. The three PSA levels are `privileged` (no restriction), `baseline`
+> (blocks known escalations), `restricted` (the hardened profile above).
+
+### Part B — verification summary
+
+| # | Command | Expected |
+|---|---------|----------|
+| a | `exec hardened -- id` | `uid=1000 … groups=…,2000` |
+| b | `exec hardened -- touch /root-test` | `Read-only file system` |
+| c | `exec hardened -- touch /tmp/ok` | succeeds |
+| d | `exec rooted -- id` | `uid=0(root)` |
+| e | `guard` waiting reason | `CreateContainerConfigError` (runAsNonRoot vs root image) |
+| f | `run bad` in `restricted` ns | `Forbidden … violates PodSecurity "restricted"` |
+| g | hardened Pod in `restricted` ns | `Running` |
+
 ## Cleanup
 
 ```bash
+# Part B (✅):
+kubectl delete namespace sec-lab psa-restricted
+
 # Restore a plain config (drop hardening) and/or reset the cluster (🖥️):
 ansible-playbook -i inventory/mycluster/inventory.ini -b \
   -e reset_confirmation=yes playbooks/reset.yml

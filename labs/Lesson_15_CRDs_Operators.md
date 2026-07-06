@@ -129,7 +129,7 @@ kubectl get crontabs -A                  # custom objects, all namespaces
 ### 4. Install an operator (e.g. cert-manager) and inspect it
 
 Installing an operator typically adds **CRDs + a controller Deployment + RBAC**.
-With Helm (Lesson 12):
+With Helm (Lesson 19):
 
 ```bash
 helm repo add jetstack https://charts.jetstack.io
@@ -240,10 +240,103 @@ kubectl get wd blue-widget                          # SIZE large, COUNT 5
 Expected: `kubectl get wd` shows `blue-widget   large   5` via the printer
 columns; the CRD is cluster-scoped while the `Widget` lives in a namespace.
 
+---
+
+## Part 2 — CR lifecycle: ownerReferences & finalizers (✅ validated with `kubectl`)
+
+This is what really matters when you **operate** a cluster full of operators: how
+custom resources are **garbage-collected** and why they sometimes get **stuck
+deleting**. Reuses the `Widget` CRD from Part 1. Validated on `kind`.
+
+### Step 5 — ownerReferences → cascade garbage collection
+
+An operator stamps `ownerReferences` on what it creates, so deleting the CR cleans
+up everything it owns. Reproduce it by hand: make a ConfigMap **owned by**
+`blue-widget`, then delete the widget.
+
+```bash
+W=$(kubectl get widget blue-widget -o jsonpath='{.metadata.uid}')   # the owner's UID
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blue-widget-data
+  ownerReferences:
+  - {apiVersion: demo.example.com/v1, kind: Widget, name: blue-widget, uid: $W}
+data: {k: v}
+EOF
+
+kubectl get cm blue-widget-data          # exists
+kubectl delete widget blue-widget        # delete the OWNER
+sleep 4
+kubectl get cm blue-widget-data          # gone — garbage-collected
+```
+
+```text
+before:  blue-widget-data   1     0s
+after delete of owner widget:
+  Error from server (NotFound): configmaps "blue-widget-data" not found   # ✓ GC'd
+```
+
+> Cascade modes: **background** (default), `--cascade=foreground`,
+> `--cascade=orphan` (keep the children). This is why deleting one CR can tear down
+> a whole app.
+
+### Step 6 — finalizers → stuck `Terminating` and how to unblock
+
+A **finalizer** blocks deletion until a controller runs cleanup and removes it. With
+**no controller** (as here), the object gets stuck — the classic production incident.
+
+```bash
+cat <<'EOF' | kubectl apply -f -
+apiVersion: demo.example.com/v1
+kind: Widget
+metadata:
+  name: green-widget
+  finalizers: ["demo.example.com/cleanup"]
+spec: {size: small, count: 1}
+EOF
+
+kubectl delete widget green-widget       # HANGS — Ctrl-C after a few seconds
+kubectl get widget green-widget \
+  -o jsonpath='deletionTimestamp={.metadata.deletionTimestamp} finalizers={.metadata.finalizers}'
+```
+
+```text
+# delete does not return; the object is stuck:
+deletionTimestamp=2026-...Z finalizers=["demo.example.com/cleanup"]
+```
+
+Unblock (last resort — only when the controller is gone for good):
+
+```bash
+kubectl patch widget green-widget --type=merge -p '{"metadata":{"finalizers":null}}'
+kubectl get widget green-widget          # NotFound — deletion completed
+```
+
+```text
+widget.demo.example.com/green-widget patched
+Error from server (NotFound): widgets.demo.example.com "green-widget" not found   # ✓
+```
+
+> 🔑 A namespace stuck in `Terminating` is the **same** problem one level up: some
+> object in it holds a finalizer whose controller is dead. Find it with
+> `kubectl get <kind> -n <ns> -o jsonpath='{.items[*].metadata.finalizers}'` and
+> clear it the same way. **Fix the controller first** whenever you can.
+
+### Verification (Part 2)
+
+| # | Command | Expected |
+|---|---------|----------|
+| 5 | `get cm blue-widget-data` after deleting the owner | `NotFound` (GC) |
+| 6a | `delete widget green-widget` | hangs; object goes `Terminating` |
+| 6b | `patch … finalizers:null` then `get` | `NotFound` (deletion completes) |
+
 ### Cleanup
 
 ```bash
-kubectl delete widget blue-widget
+kubectl delete widget blue-widget green-widget --ignore-not-found
+kubectl delete cm blue-widget-data --ignore-not-found
 kubectl delete crd widgets.demo.example.com
 # If you installed cert-manager for §4: helm uninstall cert-manager -n cert-manager
 ```
